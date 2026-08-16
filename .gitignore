@@ -45,4 +45,7 @@ next-env.d.ts
 
 # ai
 
-/.*/
+/.agents/
+
+/.claude/
+/.windsurf/

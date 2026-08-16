@@ -34,6 +34,15 @@ enum RedemptionStatus {
   CANCELLED
 }
 
+model Admin{
+  id String @id @default(cuid())
+  email String @unique
+  passwordHash String
+  Role  String @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ─────────────────────────────────────────────
 // USER
 // ─────────────────────────────────────────────

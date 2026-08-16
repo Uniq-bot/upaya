@@ -2,14 +2,19 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: Request) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ customerId: string }> }
+) {
   try {
-    const body = await req.json();
-    const { name, phone, email } = body;
+    const { customerId } = await params;
 
-    if (!phone) {
+    const body = await req.json();
+    const { amount, description } = body;
+
+    if (!amount || amount <= 0) {
       return Response.json(
-        { message: "Phone is required" },
+        { message: "Valid stamp amount is required" },
         { status: 400 }
       );
     }
@@ -44,60 +49,63 @@ export async function POST(req: Request) {
       );
     }
 
-    // Find the business's loyalty program
-    const program = await prisma.loyaltyProgram.findUnique({
+    // Make sure customer belongs to this business
+    const customer = await prisma.customer.findFirst({
       where: {
+        id: customerId,
         businessId: membership.businessId,
       },
     });
 
-    if (!program) {
+    if (!customer) {
       return Response.json(
-        { message: "Loyalty program has not been created yet" },
+        { message: "Customer not found" },
         { status: 404 }
       );
     }
 
-    // Check if customer already exists
-    const existingCustomer = await prisma.customer.findUnique({
-      where: {
-        businessId_phone: {
+    // Add stamp + update balance atomically
+    const result = await prisma.$transaction(async (tx) => {
+      const stamp = await tx.stampLedger.create({
+        data: {
           businessId: membership.businessId,
-          phone,
+          customerId,
+          amount,
+          type: "EARN",
+          description,
         },
-      },
-    });
+      });
 
-    if (existingCustomer) {
-      return Response.json(
-        { message: "Customer already exists" },
-        { status: 409 }
-      );
-    }
+      const updatedCustomer = await tx.customer.update({
+        where: {
+          id: customerId,
+        },
+        data: {
+        stampBalance:{
+            increment: amount,
+        },
+        
+        },
+      });
 
-    // Create customer
-    const customer = await prisma.customer.create({
-      data: {
-        businessId: membership.businessId,
-        programId: program.id,
-        phone,
-        name,
-        email,
-      },
+      return {
+        stamp,
+        customer: updatedCustomer,
+      };
     });
 
     return Response.json(
       {
-        message: "Customer created successfully",
-        customer,
+        message: "Stamp added successfully",
+        ...result,
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error) {
     console.error(error);
 
     return Response.json(
-      { message: "Failed to create customer" },
+      { message: "Failed to add stamp" },
       { status: 500 }
     );
   }

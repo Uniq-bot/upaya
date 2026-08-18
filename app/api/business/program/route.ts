@@ -83,3 +83,50 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function GET(req: Request) {
+  const token = (await cookies()).get("upaya_businessToken")?.value;
+
+  if (!token) {
+    return Response.json(
+      { message: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const { sub } = jwt.verify(
+    token,
+    process.env.JWT_SECRET as string
+  ) as { sub: string };
+
+  const userId = sub;
+
+  const membership = await prisma.businessMember.findFirst({
+    where: {
+      userId,
+      role: "OWNER",
+    },
+  });
+
+  if (!membership) {
+    return Response.json(
+      { message: "You are not a business owner" },
+      { status: 403 }
+    );
+  }
+
+  const program = await prisma.loyaltyProgram.findUnique({
+    where: {
+      businessId: membership.businessId,
+    },
+  });
+
+  if (!program) {
+    return Response.json(
+      { message: "Loyalty program not found" },
+      { status: 404 }
+    );
+  }
+
+  return Response.json({ program }, { status: 200 });
+}

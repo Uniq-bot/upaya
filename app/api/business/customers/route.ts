@@ -30,7 +30,6 @@ export async function POST(req: Request) {
 
     const userId = sub;
 
-    // Find the business of the logged-in user
     const membership = await prisma.businessMember.findFirst({
       where: {
         userId,
@@ -44,7 +43,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Find the business's loyalty program
     const program = await prisma.loyaltyProgram.findUnique({
       where: {
         businessId: membership.businessId,
@@ -58,7 +56,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if customer already exists
     const existingCustomer = await prisma.customer.findUnique({
       where: {
         businessId_phone: {
@@ -75,7 +72,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create customer
     const customer = await prisma.customer.create({
       data: {
         businessId: membership.businessId,
@@ -98,6 +94,60 @@ export async function POST(req: Request) {
 
     return Response.json(
       { message: "Failed to create customer" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    const token = (await cookies()).get("upaya_businessToken")?.value;
+
+    if (!token) {
+      return Response.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { sub } = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as { sub: string };
+
+    const userId = sub;
+
+    const membership = await prisma.businessMember.findFirst({
+      where: {
+        userId,
+      },
+    });
+
+    if (!membership) {
+      return Response.json(
+        { message: "Business not found" },
+        { status: 404 }
+      );
+    }
+
+    const customers = await prisma.customer.findMany({
+      where: {
+        businessId: membership.businessId,
+      },
+    });
+
+    return Response.json(
+      {
+        message: "Customers retrieved successfully",
+        customers,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(error);
+
+    return Response.json(
+      { message: "Failed to retrieve customers" },
       { status: 500 }
     );
   }

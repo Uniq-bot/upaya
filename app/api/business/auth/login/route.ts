@@ -23,19 +23,14 @@ export async function POST(req: Request) {
         email,
       },
       include: {
-        
-        
         memberships: {
-          where: {
-            role: "OWNER",
-          },
           include: {
             business: true,
           },
         },
       },
     });
-    console.log(user?.memberships[0])
+
     if (!user) {
       return Response.json(
         { message: "Invalid email or password" },
@@ -55,11 +50,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const ownerMembership = user.memberships[0];
+    const membership = user.memberships[0];
 
-    if (!ownerMembership) {
+    if (!membership) {
       return Response.json(
-        { message: "User is not a business owner" },
+        { message: "User is not associated with any business" },
         { status: 403 }
       );
     }
@@ -71,7 +66,8 @@ export async function POST(req: Request) {
           {
             sub: user.id,
             email: user.email,
-            role: user.memberships[0].role,
+            role: membership.role,
+            businessId: membership.businessId,
           },
           JWT_SECRET,
           {
@@ -88,13 +84,15 @@ export async function POST(req: Request) {
     return Response.json(
       {
         message: "Login successful",
+        token,
         user: {
           id: user.id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          role: membership.role,
         },
-        business: ownerMembership.business,
+        business: membership.business,
       },
       { status: 200 }
     );

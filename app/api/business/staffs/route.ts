@@ -110,13 +110,15 @@ export async function GET(req: Request) {
   const membership = await prisma.businessMember.findFirst({
     where: {
       userId,
-      role: "OWNER",
+      role: {
+        in: ["OWNER", "MANAGER"],
+      },
     },
   });
 
   if (!membership) {
     return Response.json(
-      { message: "You are not a business owner" },
+      { message: "You are not a business owner or manager" },
       { status: 403 },
     );
   }

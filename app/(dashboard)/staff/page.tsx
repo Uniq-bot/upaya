@@ -19,7 +19,7 @@ import { UserCheck, UserPlus, Mail, Lock, ShieldAlert } from "lucide-react";
 export default function StaffPage() {
   const { showSuccess, showError } = useToast();
 
-  const [isOwner, setIsOwner] = useState(false);
+  const [isManagerOrOwner, setIsManagerOrOwner] = useState(false);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +38,12 @@ export default function StaffPage() {
     setError(null);
 
     const meRes = await getBusinessMe();
-    if (meRes.data?.role !== "OWNER") {
-      setIsOwner(false);
+    if (meRes.data?.role !== "OWNER" && meRes.data?.role !== "MANAGER") {
+      setIsManagerOrOwner(false);
       setLoading(false);
       return;
     }
-    setIsOwner(true);
+    setIsManagerOrOwner(true);
 
     const staffRes = await getStaffMembers();
     if (staffRes.error || !staffRes.data) {
@@ -95,15 +95,15 @@ export default function StaffPage() {
     );
   }
 
-  if (!isOwner) {
+  if (!isManagerOrOwner) {
     return (
       <div className="p-8 bg-amber-50/80 border border-amber-200 rounded-3xl text-center space-y-4 max-w-md mx-auto my-12">
         <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto">
           <ShieldAlert className="w-6 h-6" />
         </div>
-        <h3 className="text-base font-bold text-amber-950">Owner Permission Required</h3>
+        <h3 className="text-base font-bold text-amber-950">Manager or Owner Permission Required</h3>
         <p className="text-xs text-amber-800 leading-relaxed">
-          Staff management is restricted to business Owners. Managers and Staff members cannot add or view other team accounts.
+          Staff management is restricted to business Managers and Owners. Staff members cannot add or view other team accounts.
         </p>
       </div>
     );

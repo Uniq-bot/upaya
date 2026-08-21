@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Rewards", href: "/rewards", icon: Gift, show: true },
     { name: "Customers", href: "/customers", icon: Users, show: true },
     { name: "Redemptions", href: "/redemptions", icon: Receipt, show: true },
-    { name: "Staff", href: "/staff", icon: UserCheck, show: isOwner },
+    { name: "Staff", href: "/staff", icon: UserCheck, show: isManagerOrOwner },
     { name: "Settings", href: "/settings", icon: Settings, show: isOwner },
   ].filter((item) => item.show);
 

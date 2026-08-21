@@ -1,14 +1,23 @@
 // lib/prisma.ts
-import 'dotenv/config';
-import { PrismaClient } from '@/app/generated/prisma/client'; // Adjust path to your generator output
-import { PrismaPg } from '@prisma/adapter-pg';      // Replace with your DB adapter
 
-// 1. Initialize the adapter
+import "dotenv/config";
+import { PrismaClient } from "@/app/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
 });
 
-// 2. Instantiate PrismaClient with the adapter
-export const prisma = new PrismaClient({ 
-  adapter 
-});   
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
